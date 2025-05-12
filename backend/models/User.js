@@ -18,9 +18,49 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['admin', 'staff'],
+        enum: ['admin', 'staff', 'patient'],
         default: 'staff'
     },
+    schedule: {
+        monday: {
+            start: { type: String, default: '09:00' },
+            end: { type: String, default: '17:00' },
+            available: { type: Boolean, default: true }
+        },
+        tuesday: {
+            start: { type: String, default: '09:00' },
+            end: { type: String, default: '17:00' },
+            available: { type: Boolean, default: true }
+        },
+        wednesday: {
+            start: { type: String, default: '09:00' },
+            end: { type: String, default: '17:00' },
+            available: { type: Boolean, default: true }
+        },
+        thursday: {
+            start: { type: String, default: '09:00' },
+            end: { type: String, default: '17:00' },
+            available: { type: Boolean, default: true }
+        },
+        friday: {
+            start: { type: String, default: '09:00' },
+            end: { type: String, default: '17:00' },
+            available: { type: Boolean, default: true }
+        },
+        saturday: {
+            start: { type: String, default: '10:00' },
+            end: { type: String, default: '14:00' },
+            available: { type: Boolean, default: false }
+        },
+        sunday: {
+            start: { type: String, default: '10:00' },
+            end: { type: String, default: '14:00' },
+            available: { type: Boolean, default: false }
+        }
+    },
+    specialties: [{
+        type: String
+    }],
     createdAt: {
         type: Date,
         default: Date.now
