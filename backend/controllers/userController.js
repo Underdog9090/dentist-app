@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 // Register new user
 export const register = async (req, res) => {
     try {
-        const { username, email, password } = req.body;
+        const { username, email, password, phoneNumber, dateOfBirth } = req.body;
 
         // Check if user already exists
         const existingUser = await User.findOne({ $or: [{ email }, { username }] });
@@ -12,12 +12,14 @@ export const register = async (req, res) => {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        // Create new user, always as patient
+        // Create new user as patient by default
         const user = new User({
             username,
             email,
             password,
-            role: 'patient' // Always set role to patient for public registration
+            role: 'patient', // Always set role to patient for public registration
+            phoneNumber,
+            dateOfBirth
         });
 
         await user.save();
@@ -28,7 +30,7 @@ export const register = async (req, res) => {
                 id: user._id, 
                 username: user.username, 
                 email: user.email,
-                role: user.role  // Add role to token
+                role: user.role
             },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
@@ -40,7 +42,9 @@ export const register = async (req, res) => {
                 id: user._id,
                 username: user.username,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                phoneNumber: user.phoneNumber,
+                dateOfBirth: user.dateOfBirth
             }
         });
     } catch (error) {
@@ -162,10 +166,15 @@ export const getStaff = async (req, res) => {
     }
 };
 
-// Create staff user
+// Create staff user (admin only)
 export const createStaff = async (req, res) => {
     try {
-        const { username, email, password } = req.body;
+        // Check if the requesting user is admin
+        if (!req.user.isAdmin()) {
+            return res.status(403).json({ message: 'Only admins can create staff accounts' });
+        }
+
+        const { username, email, password, specialties } = req.body;
 
         // Check if user already exists
         const existingUser = await User.findOne({ $or: [{ email }, { username }] });
@@ -178,7 +187,8 @@ export const createStaff = async (req, res) => {
             username,
             email,
             password,
-            role: 'staff'
+            role: 'staff',
+            specialties
         });
 
         await user.save();
@@ -188,7 +198,8 @@ export const createStaff = async (req, res) => {
                 id: user._id,
                 username: user.username,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                specialties: user.specialties
             }
         });
     } catch (error) {
@@ -290,6 +301,53 @@ export const deleteStaff = async (req, res) => {
         }
 
         res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Update user role (admin only)
+export const updateUserRole = async (req, res) => {
+    try {
+        // Check if the requesting user is admin
+        if (!req.user.isAdmin()) {
+            return res.status(403).json({ message: 'Only admins can update user roles' });
+        }
+
+        const { id } = req.params;
+        const { role } = req.body;
+
+        // Validate role
+        if (!['admin', 'staff', 'patient'].includes(role)) {
+            return res.status(400).json({ message: 'Invalid role' });
+        }
+
+        const user = await User.findByIdAndUpdate(
+            id,
+            { role },
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json(user);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+// Get all users (admin only)
+export const getAllUsers = async (req, res) => {
+    try {
+        // Check if the requesting user is admin
+        if (!req.user.isAdmin()) {
+            return res.status(403).json({ message: 'Only admins can view all users' });
+        }
+
+        const users = await User.find().select('-password');
+        res.json(users);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

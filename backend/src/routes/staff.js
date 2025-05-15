@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { auth } = require('../middleware/auth');
 const User = require('../models/User');
+const isAdmin = require('../middleware/isAdmin');
 
 // Get all staff members
 router.get('/', auth, async (req, res) => {
@@ -14,7 +15,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Create a new staff member
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, isAdmin, async (req, res) => {
   try {
     const { username, email, password, role, specialties, schedule } = req.body;
     
@@ -47,7 +48,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // Update a staff member
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, isAdmin, async (req, res) => {
   try {
     const { username, email, password, role, specialties, schedule } = req.body;
     const staff = await User.findById(req.params.id);
@@ -71,7 +72,7 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 // Delete a staff member
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, isAdmin, async (req, res) => {
   try {
     const staff = await User.findById(req.params.id);
     

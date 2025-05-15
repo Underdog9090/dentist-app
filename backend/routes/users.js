@@ -8,25 +8,32 @@ import {
     createStaff,
     updateStaff,
     deleteStaff,
-    updateStaffSchedule
+    updateStaffSchedule,
+    updateUserRole,
+    getAllUsers
 } from '../controllers/userController.js';
 import auth from '../middleware/auth.js';
+import { isAdmin } from '../middleware/isAdmin.js';
 
 const router = express.Router();
 
 // Public routes
 router.post('/register', register);
 router.post('/login', login);
-router.post('/create-admin', createAdmin);
 
 // Protected routes
 router.get('/me', auth, getCurrentUser);
 
-// Staff management routes (protected)
-router.get('/staff', auth, getStaff);
-router.post('/staff', auth, createStaff);
-router.put('/staff/:id', auth, updateStaff);
-router.delete('/staff/:id', auth, deleteStaff);
-router.put('/staff/:id/schedule', auth, updateStaffSchedule);
+// Admin only routes
+router.post('/create-admin', auth, isAdmin, createAdmin);
+router.get('/all', auth, isAdmin, getAllUsers);
+router.put('/:id/role', auth, isAdmin, updateUserRole);
+
+// Staff management routes (admin only)
+router.get('/staff', auth, isAdmin, getStaff);
+router.post('/staff', auth, isAdmin, createStaff);
+router.put('/staff/:id', auth, isAdmin, updateStaff);
+router.delete('/staff/:id', auth, isAdmin, deleteStaff);
+router.put('/staff/:id/schedule', auth, isAdmin, updateStaffSchedule);
 
 export default router; 

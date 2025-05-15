@@ -1,5 +1,7 @@
 import Appointment from '../models/Appointment.js';
 import { sendReplyEmail, sendAppointmentConfirmation, sendAppointmentCancellation } from '../utils/email.js';
+import { sendNotificationToUser } from '../services/socketService.js';
+import User from '../models/User.js';
 
 // Create new appointment
 export const createAppointment = async (req, res) => {
@@ -58,13 +60,29 @@ export const updateAppointment = async (req, res) => {
         Object.assign(appointment, req.body);
         await appointment.save();
 
-        // Send appropriate email based on status change
+        // Send appropriate email and notification based on status change
         if (statusChanged) {
             try {
                 if (req.body.status === 'confirmed') {
                     await sendAppointmentConfirmation(appointment);
+                    // Send real-time notification
+                    sendNotificationToUser(appointment.user, {
+                        type: 'booking_status',
+                        title: 'Appointment Confirmed',
+                        message: `Your appointment on ${new Date(appointment.date).toLocaleDateString()} has been confirmed.`,
+                        appointmentId: appointment._id,
+                        timestamp: new Date()
+                    });
                 } else if (req.body.status === 'cancelled') {
                     await sendAppointmentCancellation(appointment);
+                    // Send real-time notification
+                    sendNotificationToUser(appointment.user, {
+                        type: 'booking_status',
+                        title: 'Appointment Cancelled',
+                        message: `Your appointment on ${new Date(appointment.date).toLocaleDateString()} has been cancelled.`,
+                        appointmentId: appointment._id,
+                        timestamp: new Date()
+                    });
                 }
             } catch (emailError) {
                 console.error('Failed to send status change email:', emailError);
@@ -105,7 +123,7 @@ export const addReply = async (req, res) => {
         }
         const reply = {
             body,
-            admin: req.user.username || req.user.email || 'admin',
+            admin: req.user.username || req.user.email || req.user.role,
             date: new Date()
         };
         appointment.replies.push(reply);
@@ -118,6 +136,30 @@ export const addReply = async (req, res) => {
         } catch (emailErr) {
             // Log but don't fail the request if email fails
             console.error('Failed to send reply email:', emailErr);
+        }
+
+        // Notify the other party
+        if (req.user.role === 'patient') {
+            // Notify all admins
+            const admins = await User.find({ role: 'admin' });
+            admins.forEach(admin => {
+                sendNotificationToUser(admin._id, {
+                    type: 'message_reply',
+                    title: 'New Patient Reply',
+                    message: `A patient has replied to a message regarding their appointment on ${new Date(appointment.date).toLocaleDateString()}.`,
+                    appointmentId: appointment._id,
+                    timestamp: new Date()
+                });
+            });
+        } else {
+            // Notify patient
+            sendNotificationToUser(appointment.user, {
+                type: 'message_reply',
+                title: 'New Message',
+                message: `You have received a new message regarding your appointment on ${new Date(appointment.date).toLocaleDateString()}.`,
+                appointmentId: appointment._id,
+                timestamp: new Date()
+            });
         }
 
         res.status(201).json(appointment);

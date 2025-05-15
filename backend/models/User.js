@@ -19,51 +19,45 @@ const userSchema = new mongoose.Schema({
     role: {
         type: String,
         enum: ['admin', 'staff', 'patient'],
-        default: 'staff'
+        default: 'patient'
     },
     schedule: {
-        monday: {
-            start: { type: String, default: '09:00' },
-            end: { type: String, default: '17:00' },
-            available: { type: Boolean, default: true }
+        type: Map,
+        of: {
+            start: { type: String },
+            end: { type: String },
+            available: { type: Boolean }
         },
-        tuesday: {
-            start: { type: String, default: '09:00' },
-            end: { type: String, default: '17:00' },
-            available: { type: Boolean, default: true }
-        },
-        wednesday: {
-            start: { type: String, default: '09:00' },
-            end: { type: String, default: '17:00' },
-            available: { type: Boolean, default: true }
-        },
-        thursday: {
-            start: { type: String, default: '09:00' },
-            end: { type: String, default: '17:00' },
-            available: { type: Boolean, default: true }
-        },
-        friday: {
-            start: { type: String, default: '09:00' },
-            end: { type: String, default: '17:00' },
-            available: { type: Boolean, default: true }
-        },
-        saturday: {
-            start: { type: String, default: '10:00' },
-            end: { type: String, default: '14:00' },
-            available: { type: Boolean, default: false }
-        },
-        sunday: {
-            start: { type: String, default: '10:00' },
-            end: { type: String, default: '14:00' },
-            available: { type: Boolean, default: false }
-        }
+        default: () => ({
+            monday: { start: '09:00', end: '17:00', available: true },
+            tuesday: { start: '09:00', end: '17:00', available: true },
+            wednesday: { start: '09:00', end: '17:00', available: true },
+            thursday: { start: '09:00', end: '17:00', available: true },
+            friday: { start: '09:00', end: '17:00', available: true },
+            saturday: { start: '10:00', end: '14:00', available: false },
+            sunday: { start: '10:00', end: '14:00', available: false }
+        })
     },
     specialties: [{
         type: String
     }],
+    dateOfBirth: {
+        type: Date
+    },
+    phoneNumber: {
+        type: String
+    },
+    medicalHistory: [{
+        condition: String,
+        diagnosis: String,
+        date: Date
+    }],
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    lastLogin: {
+        type: Date
     }
 });
 
@@ -83,6 +77,21 @@ userSchema.pre('save', async function(next) {
 // Method to compare passwords
 userSchema.methods.comparePassword = async function(candidatePassword) {
     return bcrypt.compare(candidatePassword, this.password);
+};
+
+// Method to check if user is admin
+userSchema.methods.isAdmin = function() {
+    return this.role === 'admin';
+};
+
+// Method to check if user is staff
+userSchema.methods.isStaff = function() {
+    return this.role === 'staff';
+};
+
+// Method to check if user is patient
+userSchema.methods.isPatient = function() {
+    return this.role === 'patient';
 };
 
 const User = mongoose.model('User', userSchema);

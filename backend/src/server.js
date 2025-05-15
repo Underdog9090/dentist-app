@@ -1,3 +1,4 @@
+console.log("=== RUNNING src/server.js ===");
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -10,7 +11,7 @@ const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '20mb' }));
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/dentist', {
@@ -24,11 +25,13 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/dentist',
 const authRoutes = require('./routes/auth');
 const appointmentRoutes = require('./routes/appointments');
 const staffRoutes = require('./routes/staff');
+const profileRoutes = require('./routes/profile');
 
 // Routes
 app.use('/api/users', authRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/users/staff', staffRoutes);
+app.use('/api', profileRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -2,15 +2,28 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
 import appointmentRoutes from './routes/appointments.js';
 import userRoutes from './routes/users.js';
+import notificationRoutes from './routes/notifications.js';
 import { startReminderSystem } from './utils/reminderSystem.js';
+import { initializeSocket } from './services/socketService.js';
+import { initializeNotificationService } from './services/notificationService.js';
 
 // Load environment variables
 dotenv.config();
 
 // Create Express app
 const app = express();
+
+// Create HTTP server
+const httpServer = createServer(app);
+
+// Initialize Socket.io
+initializeSocket(httpServer);
+
+// Initialize Notification Service
+initializeNotificationService();
 
 // Middleware
 app.use(cors());
@@ -27,6 +40,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/smile-bri
 // Routes
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
@@ -44,6 +58,6 @@ app.use((err, req, res, next) => {
 
 // Start server
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 }); 
