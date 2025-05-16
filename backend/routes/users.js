@@ -13,7 +13,7 @@ import {
     getAllUsers
 } from '../controllers/userController.js';
 import auth from '../middleware/auth.js';
-import { isAdmin } from '../middleware/isAdmin.js';
+import isAdmin from '../middleware/isAdmin.js';
 
 const router = express.Router();
 

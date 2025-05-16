@@ -1,8 +1,8 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const { auth } = require('../middleware/auth');
-const User = require('../models/User');
-const isAdmin = require('../middleware/isAdmin');
+import auth from '../middleware/auth.js';
+import User from '../models/User.js';
+import isAdmin from '../middleware/isAdmin.js';
 
 // Get all staff members
 router.get('/', auth, async (req, res) => {
@@ -87,4 +87,4 @@ router.delete('/:id', auth, isAdmin, async (req, res) => {
   }
 });
 
-module.exports = router; 
+export default router; 
