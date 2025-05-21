@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "exenv": "^1.2.2",
     "html-parse-stringify": "^3.0.1",
     "i18next": "^25.2.0",
