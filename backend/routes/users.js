@@ -14,12 +14,36 @@ import {
 } from '../controllers/userController.js';
 import auth from '../middleware/auth.js';
 import isAdmin from '../middleware/isAdmin.js';
+import crypto from 'crypto';
+import nodemailer from 'nodemailer';
+import User from '../models/User.js';
+import { body, validationResult } from 'express-validator';
 
 const router = express.Router();
 
 // Public routes
-router.post('/register', register);
-router.post('/login', login);
+router.post('/register', [
+  body('email').isEmail().normalizeEmail(),
+  body('password').isLength({ min: 6 }),
+  body('username').notEmpty().trim().escape(),
+], async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  return register(req, res, next);
+});
+
+router.post('/login', [
+  body('email').isEmail().normalizeEmail(),
+  body('password').notEmpty(),
+], async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  return login(req, res, next);
+});
 
 // Protected routes
 router.get('/me', auth, getCurrentUser);
@@ -35,5 +59,68 @@ router.post('/staff', auth, isAdmin, createStaff);
 router.put('/staff/:id', auth, isAdmin, updateStaff);
 router.delete('/staff/:id', auth, isAdmin, deleteStaff);
 router.put('/staff/:id/schedule', auth, isAdmin, updateStaffSchedule);
+
+// Forgot Password Endpoint
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  if (!user) {
+    // For security, don't reveal if user exists
+    return res.status(200).json({ message: 'If that email is registered, a reset link has been sent.' });
+  }
+
+  // Generate token
+  const token = crypto.randomBytes(32).toString('hex');
+  user.resetPasswordToken = token;
+  user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+  await user.save();
+
+  // Send email
+  const transporter = nodemailer.createTransport({
+    service: 'Gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  const resetUrl = `http://localhost:3000/reset-password/${token}`;
+  const mailOptions = {
+    to: user.email,
+    from: process.env.EMAIL_USER,
+    subject: 'Smile Bright Password Reset',
+    text: `You requested a password reset. Click the link to set a new password: ${resetUrl}`,
+  };
+
+  await transporter.sendMail(mailOptions);
+
+  res.status(200).json({ message: 'If that email is registered, a reset link has been sent.' });
+});
+
+// Reset Password Endpoint with validation
+router.post('/reset-password', [
+  body('token').notEmpty(),
+  body('password').isLength({ min: 6 }),
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  const { token, password } = req.body;
+  const user = await User.findOne({
+    resetPasswordToken: token,
+    resetPasswordExpires: { $gt: Date.now() },
+  });
+  if (!user) {
+    return res.status(400).json({ message: 'Invalid or expired token.' });
+  }
+
+  user.password = password; // Will be hashed by pre-save hook
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpires = undefined;
+  await user.save();
+
+  res.status(200).json({ message: 'Password has been reset. You can now log in.' });
+});
 
 export default router; 
