@@ -18,6 +18,7 @@ import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import User from '../models/User.js';
 import { body, validationResult } from 'express-validator';
+import bcrypt from 'bcryptjs';
 
 const router = express.Router();
 
@@ -121,6 +122,27 @@ router.post('/reset-password', [
   await user.save();
 
   res.status(200).json({ message: 'Password has been reset. You can now log in.' });
+});
+
+// Change password endpoint
+router.put('/change-password', auth, async (req, res) => {
+  const userId = req.user.id;
+  const { currentPassword, newPassword } = req.body;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) return res.status(400).json({ message: 'Current password is incorrect' });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
 });
 
 export default router; 
