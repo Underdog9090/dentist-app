@@ -20,6 +20,7 @@ A modern, full-featured dental clinic website with appointment booking, patient 
   - Polished, accessible UI with icons and clear navigation
 - 🌐 Accessibility and dark mode support
 - 🛡️ Authentication (JWT)
+- 🔑 Password reset via email (secure token-based reset flow)
 
 ---
 
@@ -117,31 +118,36 @@ dentist-app/
 
 ---
 
+## Password Reset & Email Setup
+
+This project supports secure password reset via email. To enable this feature, you must configure email credentials for the backend.
+
+### Email Environment Variables
+
+In your `backend/.env` file, add the following (using your Gmail and an App Password):
+
+```
+EMAIL_USER=your_gmail_address@gmail.com
+EMAIL_PASS=your_gmail_app_password
+EMAIL_SERVICE=gmail
+```
+
+- **EMAIL_USER**: Your Gmail address (must have 2-Step Verification enabled)
+- **EMAIL_PASS**: An [App Password](https://support.google.com/accounts/answer/185833?hl=en) generated from your Google Account
+- **EMAIL_SERVICE**: The email service provider (default: `gmail`)
+
+### How Password Reset Works
+
+1. User clicks "Forgot Password?" on the login page.
+2. User enters their email address.
+3. The backend generates a secure, time-limited token and sends a reset link to the user's email.
+4. User clicks the link, enters a new password, and submits.
+5. The password is securely updated in the database.
+
+**Note:** Make sure your backend server can connect to Gmail (some networks may block SMTP).
+
+---
+
 ## How to Add or Update Patient Resources
 
-1. **Add a new HTML file** to the appropriate folder in `frontend/public/resources/` (e.g., `care/`, `faq/`, `emergency/`).
-2. **Run the PDF generation script** to create a matching PDF:
-   ```bash
-   node scripts/generate-pdfs.js
-   ```
-3. **Update `PatientResources.js`** to add the new resource to the UI.
-
----
-
-## Accessibility & Best Practices
-- Fully responsive and mobile-friendly
-- Accessible navigation and color contrast
-- Keyboard and screen reader friendly
-- Dual HTML/PDF resources for maximum usability
-
----
-
-## Contributing
-
-Feel free to submit issues, enhancement requests, or pull requests!
-
----
-
-## License
-
-This project is licensed under the MIT License. 
+1. **Add a new HTML file** to the appropriate folder in `
